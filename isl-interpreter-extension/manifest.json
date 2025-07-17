@@ -3,22 +3,22 @@
   "name": "ISL Real-time Interpreter",
   "version": "1.0.0",
   "description": "Real-time Indian Sign Language interpreter for video calls",
-  
+ 
   "permissions": [
     "activeTab",
     "storage",
     "scripting"
   ],
-  
+ 
   "host_permissions": [
     "https://meet.google.com/*",
     "https://*.zoom.us/*"
   ],
-  
+ 
   "background": {
     "service_worker": "background.js"
   },
-  
+ 
   "content_scripts": [
     {
       "matches": ["https://meet.google.com/*"],
@@ -26,7 +26,7 @@
       "run_at": "document_end"
     }
   ],
-  
+ 
   "action": {
     "default_popup": "popup.html",
     "default_title": "ISL Interpreter",
@@ -36,16 +36,24 @@
       "128": "icons/icon128.png"
     }
   },
-  
+ 
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  
+ 
   "web_accessible_resources": [
     {
-      "resources": ["*.js", "*.css", "video-processor.js"],
+      "resources": [
+        "*.js", 
+        "*.css", 
+        "video-processor.js",
+        "mediapipe-hands.js",
+        "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js",
+        "https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js",
+        "https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1620248257/drawing_utils.js"
+      ],
       "matches": ["https://meet.google.com/*"]
     }
   ]

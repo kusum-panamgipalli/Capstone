@@ -403,18 +403,59 @@ function processVideoFrame() {
 }
 
 function handleProcessedFrame(processedData) {
-    // This is where we'll add MediaPipe integration in Week 2
-    // For now, just log the processed frame data
+    // Enhanced processing with MediaPipe integration
     
     if (processedData.frameNumber % 30 === 0) { // Log every 30 frames
         console.log('Processed frame:', {
             frameNumber: processedData.frameNumber,
             dimensions: `${processedData.width}x${processedData.height}`,
             timestamp: processedData.timestamp,
-            fps: processedData.actualFPS
+            fps: processedData.actualFPS,
+            hasMediaPipe: processedData.hasMediaPipe,
+            handCount: processedData.handCount,
+            gestures: processedData.gestures
         });
     }
+
+    // Update overlay with MediaPipe results
+    if (processedData.hasMediaPipe) {
+        if (processedData.handCount > 0) {
+            // Display detected gestures
+            const gestureText = processedData.gestureText || 'Processing...';
+            const confidenceText = processedData.confidenceScores.length > 0 
+                ? `Avg: ${Math.round(processedData.confidenceScores.reduce((a, b) => a + b, 0) / processedData.confidenceScores.length * 100)}%`
+                : 'No confidence';
+            
+            updateOverlayText(gestureText, confidenceText);
+        } else {
+            // No hands detected
+            updateOverlayText('No hands detected', 'Position hands in view');
+        }
+    } else {
+        // MediaPipe not ready or failed
+        updateOverlayText('Loading MediaPipe...', 'Please wait');
+    }
 }
+
+// Add this debug function to your content.js
+function debugMediaPipe() {
+    if (window.islDebug && window.islDebug.videoProcessor) {
+        const processor = window.islDebug.videoProcessor();
+        const stats = processor.getStats();
+        
+        console.log('MediaPipe Debug Info:', {
+            isMediaPipeReady: stats.isMediaPipeReady,
+            handCount: stats.handCount,
+            lastGestures: stats.lastGestures,
+            frameCount: stats.frameCount,
+            actualFPS: stats.actualFPS
+        });
+        
+        return stats;
+    }
+    return null;
+}
+
 
 async function loadVideoProcessor() {
     try {
@@ -544,8 +585,14 @@ function sendToPopup(action, data) {
 }
 
 // Export for debugging
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined'&& window.islDebug) {
     window.islDebug = {
+        debugMediaPipe: debugMediaPipe,
+        toggleLandmarks : () => {
+            if (videoProcessor && videoProcessor.toggleLandmarks) {
+                videoProcessor.toggleLandmarks();
+                }
+            },
         isActive: () => isActive,
         videoElement: () => videoElement,
         videoProcessor: () => videoProcessor,
