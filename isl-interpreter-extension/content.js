@@ -25,6 +25,14 @@ if (document.readyState === 'loading') {
 async function initialize() {
     console.log('Initializing ISL Interpreter on:', window.location.href);
     
+    // Inject library loader into page context (MediaPipe needs to run in page context)
+    try {
+        await injectLibraries();
+        console.log('✓ Libraries injected successfully');
+    } catch (error) {
+        console.warn('Library injection failed, continuing anyway:', error);
+    }
+    
     // Load video processor first
     await loadVideoProcessor();
     
@@ -454,6 +462,55 @@ function debugMediaPipe() {
         return stats;
     }
     return null;
+}
+
+
+async function injectLibraries() {
+    console.log('Injecting external libraries into page context...');
+    
+    return new Promise((resolve, reject) => {
+        try {
+            // Create script element to inject into page
+            const script = document.createElement('script');
+            script.src = chrome.runtime.getURL('injector.js');
+            script.onload = () => {
+                console.log('✓ Injector script loaded');
+                
+                // Listen for library load confirmation
+                const listener = (event) => {
+                    if (event.data && event.data.type === 'ISL_LIBRARIES_LOADED') {
+                        console.log('✓ External libraries loaded successfully');
+                        window.removeEventListener('message', listener);
+                        // Wait a bit to ensure everything is ready
+                        setTimeout(resolve, 500);
+                    } else if (event.data && event.data.type === 'ISL_LIBRARIES_ERROR') {
+                        console.error('Failed to load libraries:', event.data.error);
+                        window.removeEventListener('message', listener);
+                        reject(new Error(event.data.error));
+                    }
+                };
+                
+                window.addEventListener('message', listener);
+                
+                // Timeout after 10 seconds (reduced from 30)
+                setTimeout(() => {
+                    window.removeEventListener('message', listener);
+                    console.warn('Library loading timeout - proceeding anyway');
+                    resolve();
+                }, 10000);
+            };
+            
+            script.onerror = () => {
+                console.error('Failed to inject library loader');
+                reject(new Error('Failed to inject library loader'));
+            };
+            
+            (document.head || document.documentElement).appendChild(script);
+        } catch (error) {
+            console.error('Error injecting libraries:', error);
+            reject(error);
+        }
+    });
 }
 
 
