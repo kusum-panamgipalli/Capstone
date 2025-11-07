@@ -24,19 +24,19 @@ wheels/
 venv/
 ENV/
 env/
+env.bak/
+venv.bak/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Model files (large)
+# Model files (large files)
 *.h5
 *.hdf5
+*.pkl
+*.npy
 *.pb
 saved_model/
+model-training/models/
+model-training/data/raw/
+model-training/data/processed/
 
 # Training outputs
 *.png
@@ -46,19 +46,30 @@ training_history.png
 dataset_distribution.png
 sample_images.png
 
-# Logs
-*.log
-logs/
-translation_output.txt
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
 desktop.ini
 
+# Logs
+*.log
+logs/
+translation_output.txt
+
 # Jupyter Notebooks
 .ipynb_checkpoints/
 *.ipynb
+
+# Temporary files
+*.tmp
+*.temp
 
 # Data (if you want to exclude dataset)
 # Indian/
@@ -66,3 +77,4 @@ desktop.ini
 
 # Generated files
 isl_labels.json
+

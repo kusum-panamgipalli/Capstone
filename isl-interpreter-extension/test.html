@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ISL Interpreter - Standalone Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a73e8;
+            margin-top: 0;
+        }
+        #video-container {
+            position: relative;
+            display: inline-block;
+        }
+        #video {
+            width: 640px;
+            height: 480px;
+            background: #000;
+            border-radius: 8px;
+        }
+        #overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            background: #e8f0fe;
+        }
+        .error {
+            background: #fce8e6;
+            color: #c5221f;
+        }
+        .success {
+            background: #e6f4ea;
+            color: #137333;
+        }
+        #stats {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤟 ISL Interpreter - Standalone Test</h1>
+        
+        <div class="status" id="status">
+            Loading libraries...
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn" disabled>Start Camera</button>
+            <button id="stopBtn" disabled>Stop</button>
+        </div>
+        
+        <div id="video-container">
+            <video id="video" autoplay playsinline></video>
+            <div id="overlay">Ready</div>
+        </div>
+        
+        <div id="stats">
+            <div>Detected: <span id="detectedSign">-</span></div>
+            <div>Confidence: <span id="confidence">-</span></div>
+            <div>FPS: <span id="fps">0</span></div>
+            <div>Hands Detected: <span id="handsCount">0</span></div>
+        </div>
+    </div>
+
+    <!-- Load TensorFlow.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.11.0"></script>
+    
+    <!-- Load MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675465747/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675465747/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js"></script>
+
+    <script>
+        // ISL Model Configuration
+        const MODEL_CONFIG = {
+            numClasses: 35,
+            labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9",
+                     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
+                     "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
+                     "U", "V", "W", "X", "Y", "Z"]
+        };
+
+        let hands, camera;
+        let model = null;
+        let isProcessing = false;
+        let lastPrediction = null;
+        let frameCount = 0;
+        let startTime = Date.now();
+
+        // Initialize
+        async function init() {
+            try {
+                updateStatus('Loading TensorFlow.js model...', 'status');
+                
+                // Load the trained model
+                try {
+                    // Try loading TensorFlow.js format first
+                    model = await tf.loadLayersModel('./models/tfjs_model/model.json');
+                    console.log('✓ TensorFlow.js model loaded successfully');
+                    updateStatus('Model loaded! Initializing MediaPipe...', 'status');
+                } catch (modelError) {
+                    console.warn('TensorFlow.js model not found, trying alternatives...', modelError);
+                    try {
+                        // Fallback: try loading from graph model
+                        model = await tf.loadGraphModel('./models/model/model.json');
+                        console.log('✓ Graph model loaded');
+                        updateStatus('Model loaded! Initializing MediaPipe...', 'status');
+                    } catch (error2) {
+                        console.error('Model loading failed:', error2);
+                        updateStatus('Warning: Using fallback detection (model not loaded)', 'error');
+                    }
+                }
+                
+                // Initialize MediaPipe Hands
+                hands = new Hands({
+                    locateFile: (file) => {
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`;
+                    }
+                });
+
+                hands.setOptions({
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5,
+                    maxNumHands: 1
+                });
+
+                hands.onResults(onResults);
+                
+                const statusMsg = model ? 
+                    'Ready! Click "Start Camera" to begin.' : 
+                    'MediaPipe ready (using basic detection)';
+                updateStatus(statusMsg, 'success');
+                document.getElementById('startBtn').disabled = false;
+                
+            } catch (error) {
+                console.error('Initialization error:', error);
+                updateStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function startCamera() {
+            try {
+                const video = document.getElementById('video');
+                
+                // Check if Camera utility is available
+                if (typeof Camera === 'undefined') {
+                    // Fallback: use getUserMedia directly
+                    console.log('Using getUserMedia fallback');
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { width: 640, height: 480 }
+                    });
+                    video.srcObject = stream;
+                    
+                    // Process frames manually
+                    const processFrame = async () => {
+                        if (isProcessing && video.readyState === video.HAVE_ENOUGH_DATA) {
+                            await hands.send({image: video});
+                        }
+                        if (isProcessing) {
+                            requestAnimationFrame(processFrame);
+                        }
+                    };
+                    
+                    video.onloadedmetadata = () => {
+                        video.play();
+                        isProcessing = true;
+                        processFrame();
+                    };
+                } else {
+                    // Use MediaPipe Camera utility
+                    camera = new Camera(video, {
+                        onFrame: async () => {
+                            if (isProcessing) {
+                                await hands.send({image: video});
+                            }
+                        },
+                        width: 640,
+                        height: 480
+                    });
+                    
+                    await camera.start();
+                    isProcessing = true;
+                }
+                
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                
+                updateStatus('Camera started! Show hand signs (A-Z, 1-9)', 'success');
+                
+            } catch (error) {
+                console.error('Camera error:', error);
+                updateStatus('Error accessing camera: ' + error.message, 'error');
+            }
+        }
+
+        function stopCamera() {
+            isProcessing = false;
+            
+            const video = document.getElementById('video');
+            
+            if (camera) {
+                camera.stop();
+            } else if (video.srcObject) {
+                // Stop getUserMedia stream
+                const stream = video.srcObject;
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            updateStatus('Camera stopped', 'status');
+        }
+
+        async function onResults(results) {
+            frameCount++;
+            const elapsed = (Date.now() - startTime) / 1000;
+            const fps = Math.round(frameCount / elapsed);
+            document.getElementById('fps').textContent = fps;
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                document.getElementById('handsCount').textContent = '1';
+                
+                // Extract landmarks as array of [x, y, z]
+                const landmarksArray = [];
+                for (const landmark of landmarks) {
+                    landmarksArray.push([landmark.x, landmark.y, landmark.z]);
+                }
+                
+                let prediction;
+                
+                // Use Flask API for prediction with trained model
+                try {
+                    const response = await fetch('http://localhost:5000/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            landmarks: landmarksArray
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        prediction = {
+                            sign: result.sign,
+                            confidence: result.confidence
+                        };
+                    } else {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                } catch (error) {
+                    // If API is not available or fails, fall back to simple detection
+                    if (error.message.includes('fetch')) {
+                        console.warn('Flask API not available. Make sure to run: python api_server.py');
+                    } else {
+                        console.error('Prediction error:', error);
+                    }
+                    prediction = detectSimpleGesture(landmarks);
+                }
+                
+                document.getElementById('overlay').textContent = prediction.sign;
+                document.getElementById('detectedSign').textContent = prediction.sign;
+                document.getElementById('confidence').textContent = (prediction.confidence * 100).toFixed(1) + '%';
+                
+            } else {
+                document.getElementById('handsCount').textContent = '0';
+                document.getElementById('overlay').textContent = 'No hand detected';
+                document.getElementById('detectedSign').textContent = '-';
+                document.getElementById('confidence').textContent = '-';
+            }
+        }
+
+        // Simple gesture detection based on hand shape
+        function detectSimpleGesture(landmarks) {
+            // This is a simplified version - the actual model would do this
+            // For now, we'll just detect closed fist vs open hand
+            
+            const tipIndices = [4, 8, 12, 16, 20]; // Thumb, Index, Middle, Ring, Pinky tips
+            const baseIndices = [2, 5, 9, 13, 17]; // Their base joints
+            
+            let extendedFingers = 0;
+            for (let i = 0; i < 5; i++) {
+                const tip = landmarks[tipIndices[i]];
+                const base = landmarks[baseIndices[i]];
+                
+                // Simple check: if tip is higher than base, finger is extended
+                if (tip.y < base.y) {
+                    extendedFingers++;
+                }
+            }
+            
+            // Map to simple signs
+            const signs = ['Fist', 'One', 'Peace', 'Three', 'Four', 'Five'];
+            const sign = signs[Math.min(extendedFingers, 5)];
+            
+            return {
+                sign: sign,
+                confidence: 0.7
+            };
+        }
+
+        function updateStatus(message, type = 'status') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = 'status ' + type;
+        }
+
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', startCamera);
+        document.getElementById('stopBtn').addEventListener('click', stopCamera);
+
+        // Start initialization
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
