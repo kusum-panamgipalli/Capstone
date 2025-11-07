@@ -1,54 +1,105 @@
-# ISL Interpreter - 2-Hand Support 🤚🤚# Indian Sign Language (ISL) Real-time Interpreter
+# ISL Interpreter - Kusum's Implementation# ISL Interpreter - 2-Hand Support 🤚🤚# Indian Sign Language (ISL) Real-time Interpreter
 
 
 
-Real-time Indian Sign Language interpreter using **MediaPipe hand landmarks** and neural networks.A state-of-the-art real-time Indian Sign Language interpreter using **MediaPipe hand landmarks** and deep learning for accurate sign recognition.
+**99.98% accuracy** | **2-hand support** | **Real-time (~12 FPS)**
 
 
 
-## ✨ Features## 🎯 Features
+## Quick StartReal-time Indian Sign Language interpreter using **MediaPipe hand landmarks** and neural networks.A state-of-the-art real-time Indian Sign Language interpreter using **MediaPipe hand landmarks** and deep learning for accurate sign recognition.
 
 
+
+```powershell
+
+cd ISL_Kusum
+
+.\.venv311\Scripts\python.exe scripts\realtime_inference_landmark_2hands.py## ✨ Features## 🎯 Features
+
+```
+
+
+
+## First Time Setup
 
 - **99.95% Accuracy** - Only 4 errors in 8,386 validation samples- **Real-time Recognition**: Instant translation of ISL signs from webcam
 
-- **2-Hand Support** - Recognizes both 1-handed and 2-handed signs- **35 Classes**: Recognizes digits (1-9) and letters (A-Z)
+```powershell
+
+# 1. Create environment- **2-Hand Support** - Recognizes both 1-handed and 2-handed signs- **35 Classes**: Recognizes digits (1-9) and letters (A-Z)
+
+python -m venv .venv311
 
 - **Ultra Fast** - ~12 FPS real-time recognition- **MediaPipe Integration**: Uses Google's MediaPipe for precise hand landmark detection
 
-- **Lighting Independent** - Works in any lighting condition- **Landmark-Based Learning**: Trains on hand geometry (21 landmarks × 3D coordinates) instead of raw images
+# 2. Install dependencies
 
-- **Small Model** - Only 0.93 MB model size- **Ultra-Fast**: ~10ms total latency (10x faster than image-based models)
+.\.venv311\Scripts\pip install -r requirements.txt- **Lighting Independent** - Works in any lighting condition- **Landmark-Based Learning**: Trains on hand geometry (21 landmarks × 3D coordinates) instead of raw images
 
-- **41,930 Training Samples** - Trained on comprehensive ISL dataset- **Lighting Independent**: Works in any lighting condition
 
-- **Background Independent**: Ignores background clutter
 
-## 🚀 Quick Start- **High Accuracy**: 95%+ accuracy with geometric feature learning
+# 3. Get Indian/ dataset (not in Git - download separately)- **Small Model** - Only 0.93 MB model size- **Ultra-Fast**: ~10ms total latency (10x faster than image-based models)
 
-- **Optimized Model**: Quantized TFLite model (5MB) for web deployment
 
-### Prerequisites- **User-friendly Interface**: Visual feedback with hand skeleton overlay
+
+# 4. Run- **41,930 Training Samples** - Trained on comprehensive ISL dataset- **Lighting Independent**: Works in any lighting condition
+
+.\.venv311\Scripts\python.exe scripts\realtime_inference_landmark_2hands.py
+
+```- **Background Independent**: Ignores background clutter
+
+
+
+## What's Included## 🚀 Quick Start- **High Accuracy**: 95%+ accuracy with geometric feature learning
+
+
+
+- **Model**: `models/isl_landmark_model_2hands.h5` (0.93 MB, 99.98% accuracy)- **Optimized Model**: Quantized TFLite model (5MB) for web deployment
+
+- **Scripts**: Extract landmarks, train, real-time inference
+
+- **Analysis**: Dataset and error analysis tools### Prerequisites- **User-friendly Interface**: Visual feedback with hand skeleton overlay
+
+- **Docs**: Complete guides and implementation details
 
 - Python 3.11 (MediaPipe requires 3.11 or 3.12)- **Translation Accumulation**: Builds sentences as you sign
 
+## Tech Stack
+
 - Webcam- **Web-ready**: Designed for Google Meet integration
 
+- MediaPipe v0.10.21 (hand detection)
+
+- TensorFlow 2.19.1 (neural network)
+
+- Python 3.11.9
+
+- OpenCV (webcam)### Installation## 📁 Project Structure
 
 
-### Installation## 📁 Project Structure
+
+## Performance
 
 
 
-1. **Activate virtual environment:**```
+- **Accuracy**: 99.98% (2 errors in 8,386 samples)1. **Activate virtual environment:**```
 
-```powershellISL/
+- **Speed**: ~12 FPS real-time
 
-.venv311\Scripts\Activate.ps1├── Indian_Normalized/       # Brightness-normalized dataset (42,745 images)
+- **Size**: 0.93 MB model```powershellISL/
 
-```│   ├── A/                   # ~1200 images per class
+- **Signs**: 35 (1-9, A-Z)
 
-│   ├── B/
+- **Hands**: 1 or 2 hand detection.venv311\Scripts\Activate.ps1├── Indian_Normalized/       # Brightness-normalized dataset (42,745 images)
+
+
+
+---```│   ├── A/                   # ~1200 images per class
+
+
+
+For detailed docs, see `PROJECT_INFO.md` | For quick commands, see `QUICKSTART.md`│   ├── B/
+
 
 2. **Install dependencies (if needed):**│   ├── ...
 

@@ -9,9 +9,18 @@ import time
 from collections import deque
 from tensorflow import keras
 import mediapipe as mp
+import os
 
 class ISLInterpreter2Hands:
-    def __init__(self, model_path='../models/isl_landmark_model_2hands.h5', labels_path='../models/isl_landmark_labels_2hands.json'):
+    def __init__(self, model_path=None, labels_path=None):
+        # Auto-detect paths based on where script is run from
+        if model_path is None:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            model_path = os.path.join(script_dir, '..', 'models', 'isl_landmark_model_2hands.h5')
+        if labels_path is None:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            labels_path = os.path.join(script_dir, '..', 'models', 'isl_landmark_labels_2hands.json')
+        
         print("Initializing MediaPipe hand detection (2-hand support)...")
         
         # MediaPipe hands - NOW DETECTS UP TO 2 HANDS!
