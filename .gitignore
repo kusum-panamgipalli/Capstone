@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Model files (large)
+*.h5
+*.hdf5
+*.pb
+saved_model/
+
+# Training outputs
+*.png
+*.jpg
+*.jpeg
+training_history.png
+dataset_distribution.png
+sample_images.png
+
+# Logs
+*.log
+logs/
+translation_output.txt
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Data (if you want to exclude dataset)
+# Indian/
+# Uncomment above line if dataset should not be committed
+
+# Generated files
+isl_labels.json
